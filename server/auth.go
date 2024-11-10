@@ -12,8 +12,9 @@ func (s *server) authService() {
 	authHandler.NewAuthHttpHandler(s.cfg, authUsecase)
 	authHandler.NewAuthGrpcHandler(authUsecase)
 
-	s.app.Group("/auth_v1")
+	auth := s.app.Group("/auth_v1")
 
+	auth.GET("/", s.healthCheckService)
 	// Health Check
 
 }

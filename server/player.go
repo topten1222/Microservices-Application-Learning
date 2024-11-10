@@ -13,5 +13,6 @@ func (s *server) playerService() {
 	playerHandler.NewPlayerGrpcHandler(usecase)
 	playerHandler.NewPlayerQueueHandler(s.cfg, usecase)
 
-	s.app.Group("/player")
+	player := s.app.Group("/player_v1")
+	player.GET("/", s.healthCheckService)
 }

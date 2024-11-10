@@ -13,5 +13,6 @@ func (s *server) paymentService() {
 	paymentHandler.NewPaymentGrpcHandler(usecase)
 	paymentHandler.NewPaymentQueueHandler(s.cfg, usecase)
 
-	s.app.Group("/payment")
+	payment := s.app.Group("/payment_v1")
+	payment.GET("/", s.healthCheckService)
 }

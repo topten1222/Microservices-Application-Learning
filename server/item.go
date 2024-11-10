@@ -12,5 +12,6 @@ func (s *server) itemService() {
 	itemHandler.NewItemHttpHandler(s.cfg, usecase)
 	itemHandler.NewItemGrpcHandler(usecase)
 
-	s.app.Group("/item")
+	item := s.app.Group("/item_v1")
+	item.GET("/", s.healthCheckService)
 }

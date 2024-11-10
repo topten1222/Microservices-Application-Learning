@@ -13,5 +13,6 @@ func (s *server) inventoryService() {
 	inventoryHandler.NewInventoryGrpcHandler(usecase)
 	inventoryHandler.NewInventoryQueueHandler(s.cfg, usecase)
 
-	s.app.Group("/inventory")
+	inventory := s.app.Group("/inventory_v1")
+	inventory.GET("/", s.healthCheckService)
 }
