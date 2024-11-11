@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+// Package option
+option go_package = "github.com/topten1222/hello_sekai";
+
+// Messages
+message CredentialSearchReq {
+    string accessToken = 1;
+}
+
+message CredentialSearchRes {
+    bool inValid = 1;
+}
+
+message RoleCountReq {}
+
+message RoleCountRes {
+    int64 count = 1;
+}
+
+// Service Definition
+service AuthGrpcService {
+    rpc CredentialSearch(CredentialSearchReq) returns (CredentialSearchRes);
+    rpc RolesCount(RoleCountReq) returns (RoleCountRes);
+}
