@@ -1,9 +1,13 @@
 package server
 
 import (
+	"log"
+
 	"github.com/topten1222/hello_sekai/modules/auth/authHandler"
+	authPb "github.com/topten1222/hello_sekai/modules/auth/authPb"
 	"github.com/topten1222/hello_sekai/modules/auth/authRepository"
 	"github.com/topten1222/hello_sekai/modules/auth/authUsecase"
+	"github.com/topten1222/hello_sekai/pkg/grpccon"
 )
 
 func (s *server) authService() {
@@ -11,6 +15,15 @@ func (s *server) authService() {
 	authUsecase := authUsecase.NewAuthUsecase(authRepo)
 	authHandler.NewAuthHttpHandler(s.cfg, authUsecase)
 	authHandler.NewAuthGrpcHandler(authUsecase)
+
+	//grpc
+
+	go func() {
+		grpcServer, list := grpccon.NewGrpcServer(&s.cfg.Jwt, s.cfg.Grpc.AuthUrl)
+		authPb.RegisterAuthGrpcServiceServer(grpcServer, authHandler.NewAuthGrpcHandler(authUsecase))
+		log.Printf("Auth Grpc server listening on %s", s.cfg.Grpc.AuthUrl)
+		grpcServer.Serve(list)
+	}()
 
 	auth := s.app.Group("/auth_v1")
 
