@@ -24,7 +24,6 @@ func PlayerMigrate(pctx context.Context, cfg *config.Config) {
 	col := db.Collection("players")
 
 	indexs, _ := col.Indexes().CreateMany(pctx, []mongo.IndexModel{
-		{Keys: bson.D{{Key: "_id", Value: 1}}},
 		{Keys: bson.D{{Key: "email", Value: 1}}},
 	})
 
@@ -35,6 +34,7 @@ func PlayerMigrate(pctx context.Context, cfg *config.Config) {
 	documents := func() []interface{} {
 		players := []*player.Player{
 			{
+				Id:       primitive.NewObjectID(),
 				Email:    "player0001@sekai.com",
 				Password: "123456",
 				Username: "player001",
@@ -47,6 +47,7 @@ func PlayerMigrate(pctx context.Context, cfg *config.Config) {
 				CreatedAt: utils.LocalTime(),
 			},
 			{
+				Id:       primitive.NewObjectID(),
 				Email:    "player0002@sekai.com",
 				Password: "123456",
 				Username: "player002",
@@ -59,6 +60,7 @@ func PlayerMigrate(pctx context.Context, cfg *config.Config) {
 				CreatedAt: utils.LocalTime(),
 			},
 			{
+				Id:       primitive.NewObjectID(),
 				Email:    "player0003@sekai.com",
 				Password: "123456",
 				Username: "player003",
@@ -71,6 +73,7 @@ func PlayerMigrate(pctx context.Context, cfg *config.Config) {
 				CreatedAt: utils.LocalTime(),
 			},
 			{
+				Id:       primitive.NewObjectID(),
 				Email:    "admin001@sekai.com",
 				Password: "123456",
 				Username: "admin001",

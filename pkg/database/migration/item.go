@@ -9,6 +9,7 @@ import (
 	"github.com/topten1222/hello_sekai/pkg/database"
 	"github.com/topten1222/hello_sekai/utils"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -31,6 +32,7 @@ func ItemMigrate(pctx context.Context, cfg *config.Config) {
 	documents := func() []interface{} {
 		items := []*item.Item{
 			{
+				Id:          primitive.NewObjectID(),
 				Title:       "Diamond Sword",
 				Price:       1000,
 				ImageUrl:    "https://i.imgur.com/1Y8tQZM.png",
@@ -40,6 +42,7 @@ func ItemMigrate(pctx context.Context, cfg *config.Config) {
 				UpdatedAt:   utils.LocalTime(),
 			},
 			{
+				Id:          primitive.NewObjectID(),
 				Title:       "Iron Sword",
 				Price:       500,
 				ImageUrl:    "https://i.imgur.com/1Y8tQZM.png",
@@ -49,6 +52,7 @@ func ItemMigrate(pctx context.Context, cfg *config.Config) {
 				UpdatedAt:   utils.LocalTime(),
 			},
 			{
+				Id:          primitive.NewObjectID(),
 				Title:       "Wooden Sword",
 				Price:       100,
 				ImageUrl:    "https://i.imgur.com/1Y8tQZM.png",

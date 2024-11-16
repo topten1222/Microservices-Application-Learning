@@ -8,6 +8,7 @@ import (
 	"github.com/topten1222/hello_sekai/modules/auth"
 	"github.com/topten1222/hello_sekai/pkg/database"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -43,10 +44,12 @@ func AuthMigrate(pctx context.Context, cfg *config.Config) {
 	documents := func() []interface{} {
 		roles := []*auth.Role{
 			{
+				Id:    primitive.NewObjectID(),
 				Title: "Player",
 				Code:  0,
 			},
 			{
+				Id:    primitive.NewObjectID(),
 				Title: "Admin",
 				Code:  1,
 			},
