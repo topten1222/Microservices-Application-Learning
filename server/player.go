@@ -13,7 +13,7 @@ import (
 func (s *server) playerService() {
 	repo := playerRepository.NewPlayerRepository(s.db)
 	usecase := playerUsecase.NewPlayerUsecase(repo)
-	playerHandler.NewPlayerHttpHandler(s.cfg, usecase)
+	httpHandler := playerHandler.NewPlayerHttpHandler(s.cfg, usecase)
 	playerHandler.NewPlayerGrpcHandler(usecase)
 	playerHandler.NewPlayerQueueHandler(s.cfg, usecase)
 	go func() {
@@ -25,4 +25,5 @@ func (s *server) playerService() {
 
 	player := s.app.Group("/player_v1")
 	player.GET("/", s.healthCheckService)
+	player.POST("/player/register", httpHandler.CreatePlayer)
 }
