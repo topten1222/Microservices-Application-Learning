@@ -3,6 +3,7 @@ package playerUsecase
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/topten1222/hello_sekai/modules/player"
 	"github.com/topten1222/hello_sekai/modules/player/playerRepository"
@@ -13,7 +14,9 @@ import (
 
 type (
 	PlayerUsecaseService interface {
-		CreatePlayer(context.Context, *player.CreatePlayerReq) (string, error)
+		CreatePlayer(context.Context, *player.CreatePlayerReq) (*player.PlayerProfile, error)
+		FindOnePlayerProfile(context.Context, string) (*player.PlayerProfile, error)
+		AddPlayerMoney(context.Context, *player.CreatePlayerTransectionReq) error
 	}
 
 	playerUsecase struct {
@@ -25,13 +28,13 @@ func NewPlayerUsecase(playerRepository playerRepository.PlayerRepositoryService)
 	return &playerUsecase{playerRepository: playerRepository}
 }
 
-func (u *playerUsecase) CreatePlayer(pctx context.Context, req *player.CreatePlayerReq) (string, error) {
+func (u *playerUsecase) CreatePlayer(pctx context.Context, req *player.CreatePlayerReq) (*player.PlayerProfile, error) {
 	if !u.playerRepository.IsUniquePlayer(pctx, req.Email, req.Username) {
-		return "", errors.New("email or username is already taken")
+		return nil, errors.New("email or username is already taken")
 	}
 	hashPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
-		return "", errors.New("error: failed to hash password")
+		return nil, errors.New("error: failed to hash password")
 	}
 	playerId, err := u.playerRepository.InsertOnePlayer(pctx, &player.Player{
 		Id:       primitive.NewObjectID(),
@@ -48,7 +51,37 @@ func (u *playerUsecase) CreatePlayer(pctx context.Context, req *player.CreatePla
 		UpdatedAt: utils.LocalTime(),
 	})
 	if err != nil {
-		return "", errors.New("error: failed to create player")
+		return nil, errors.New("error: failed to create player")
 	}
-	return playerId.Hex(), nil
+
+	return u.FindOnePlayerProfile(pctx, playerId.Hex())
+}
+
+func (u *playerUsecase) FindOnePlayerProfile(pctx context.Context, playerId string) (*player.PlayerProfile, error) {
+	result, err := u.playerRepository.FindOnePlayerProfile(pctx, playerId)
+	if err != nil {
+		return nil, err
+	}
+	loc, err := time.LoadLocation("Asia/Bangkok")
+	if err != nil {
+		return nil, errors.New("error: faild load location")
+	}
+	return &player.PlayerProfile{
+		Id:        result.Id.Hex(),
+		Email:     result.Email,
+		Username:  result.Username,
+		CreatedAt: result.CreatedAt.In(loc),
+		UpdatedAt: result.UpdatedAt.In(loc),
+	}, nil
+}
+
+func (u *playerUsecase) AddPlayerMoney(pctx context.Context, playerTransaction *player.CreatePlayerTransectionReq) error {
+	if err := u.playerRepository.InsertOnePlayerTransaction(pctx, &player.PlayerTransaction{
+		PlayerId:  playerTransaction.PlayerId,
+		Amount:    playerTransaction.Amount,
+		CreatedAt: utils.LocalTime(),
+	}); err != nil {
+		return err
+	}
+	return nil
 }

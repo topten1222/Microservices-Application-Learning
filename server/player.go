@@ -26,4 +26,7 @@ func (s *server) playerService() {
 	player := s.app.Group("/player_v1")
 	player.GET("/", s.healthCheckService)
 	player.POST("/player/register", httpHandler.CreatePlayer)
+	player.GET("/player/:player_id", httpHandler.FindOnePlayerProfile)
+	player.POST("/player/add-money", httpHandler.AddPlayerMoney)
+
 }

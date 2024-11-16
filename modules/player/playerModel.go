@@ -23,7 +23,7 @@ type (
 	}
 
 	CreatePlayerTransectionReq struct {
-		PlayerId string `json:"player_id" form:"player_id" validate:"required,max=64"`
-		Amount   int    `json:"amount" form:"amount" validate:"required"`
+		PlayerId string  `json:"player_id" form:"player_id" validate:"required,max=64"`
+		Amount   float64 `json:"amount" form:"amount" validate:"required"`
 	}
 )

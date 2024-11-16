@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v4"
@@ -17,6 +18,8 @@ import (
 type (
 	PlayerHttpHandlerService interface {
 		CreatePlayer(echo.Context) error
+		FindOnePlayerProfile(echo.Context) error
+		AddPlayerMoney(echo.Context) error
 	}
 
 	playerHttpHandler struct {
@@ -34,7 +37,10 @@ func (h *playerHttpHandler) CreatePlayer(c echo.Context) error {
 	fmt.Println("erer222")
 	wrapper := request.ContextWrapper(c)
 	req := new(player.CreatePlayerReq)
-	fmt.Println(wrapper)
+	validate := validator.New(validator.WithRequiredStructEnabled())
+	if err := validate.Struct(req); err != nil {
+		return response.ErrResponse(c, http.StatusBadRequest, err.Error())
+	}
 	if err := wrapper.Bind(req); err != nil {
 		fmt.Println("eer")
 		return response.ErrResponse(c, http.StatusBadRequest, err.Error())
@@ -51,4 +57,37 @@ func (h *playerHttpHandler) CreatePlayer(c echo.Context) error {
 		return response.ErrResponse(c, http.StatusInternalServerError, err.Error())
 	}
 	return response.SuccessResponse(c, http.StatusOK, res)
+}
+
+func (h *playerHttpHandler) FindOnePlayerProfile(c echo.Context) error {
+	ctx := context.Background()
+	playerId := strings.TrimPrefix(c.Param("player_id"), "player:")
+	if playerId == "" {
+		return response.ErrResponse(c, http.StatusBadRequest, "player_id is required")
+	}
+	res, err := h.playerUsecase.FindOnePlayerProfile(ctx, playerId)
+	if err != nil {
+		return response.ErrResponse(c, http.StatusBadRequest, err.Error())
+	}
+	return response.SuccessResponse(c, http.StatusOK, res)
+}
+
+func (h *playerHttpHandler) AddPlayerMoney(c echo.Context) error {
+	ctx := context.Background()
+	wrapper := request.ContextWrapper(c)
+	req := new(player.CreatePlayerTransectionReq)
+	validate := validator.New(validator.WithRequiredStructEnabled())
+	if err := validate.Struct(req); err != nil {
+		return response.ErrResponse(c, http.StatusBadRequest, err.Error())
+	}
+	if err := wrapper.Bind(req); err != nil {
+		return response.ErrResponse(c, http.StatusBadRequest, err.Error())
+	}
+	if _, err := h.playerUsecase.FindOnePlayerProfile(ctx, req.PlayerId); err != nil {
+		return response.ErrResponse(c, http.StatusBadRequest, err.Error())
+	}
+	if err := h.playerUsecase.AddPlayerMoney(ctx, req); err != nil {
+		return response.ErrResponse(c, http.StatusInternalServerError, err.Error())
+	}
+	return response.SuccessResponse(c, http.StatusOK, map[string]any{"message": "success"})
 }
