@@ -20,6 +20,7 @@ type (
 		CreatePlayer(echo.Context) error
 		FindOnePlayerProfile(echo.Context) error
 		AddPlayerMoney(echo.Context) error
+		GetPlayerSavingAccount(echo.Context) error
 	}
 
 	playerHttpHandler struct {
@@ -76,18 +77,30 @@ func (h *playerHttpHandler) AddPlayerMoney(c echo.Context) error {
 	ctx := context.Background()
 	wrapper := request.ContextWrapper(c)
 	req := new(player.CreatePlayerTransectionReq)
-	validate := validator.New(validator.WithRequiredStructEnabled())
-	if err := validate.Struct(req); err != nil {
-		return response.ErrResponse(c, http.StatusBadRequest, err.Error())
-	}
 	if err := wrapper.Bind(req); err != nil {
 		return response.ErrResponse(c, http.StatusBadRequest, err.Error())
 	}
-	if _, err := h.playerUsecase.FindOnePlayerProfile(ctx, req.PlayerId); err != nil {
+	playerId := strings.TrimPrefix(req.PlayerId, "player:")
+	if _, err := h.playerUsecase.FindOnePlayerProfile(ctx, playerId); err != nil {
 		return response.ErrResponse(c, http.StatusBadRequest, err.Error())
 	}
-	if err := h.playerUsecase.AddPlayerMoney(ctx, req); err != nil {
-		return response.ErrResponse(c, http.StatusInternalServerError, err.Error())
+	res, err := h.playerUsecase.AddPlayerMoney(ctx, req)
+	if err != nil {
+		return response.ErrResponse(c, http.StatusBadRequest, err.Error())
 	}
-	return response.SuccessResponse(c, http.StatusOK, map[string]any{"message": "success"})
+	return response.SuccessResponse(c, http.StatusOK, res)
+}
+
+func (h *playerHttpHandler) GetPlayerSavingAccount(c echo.Context) error {
+	ctx := context.Background()
+	playerId := c.Param("player_id")
+	if playerId == "" {
+		return response.ErrResponse(c, http.StatusBadRequest, "player_id is required")
+	}
+	res, err := h.playerUsecase.GetPlayerSavingAccount(ctx, playerId)
+	if err != nil {
+		return response.ErrResponse(c, http.StatusBadRequest, err.Error())
+	}
+	return response.SuccessResponse(c, http.StatusOK, res)
+
 }

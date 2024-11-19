@@ -28,5 +28,6 @@ func (s *server) playerService() {
 	player.POST("/player/register", httpHandler.CreatePlayer)
 	player.GET("/player/:player_id", httpHandler.FindOnePlayerProfile)
 	player.POST("/player/add-money", httpHandler.AddPlayerMoney)
+	player.GET("/player/account/:player_id", httpHandler.GetPlayerSavingAccount)
 
 }

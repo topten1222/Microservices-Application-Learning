@@ -3,6 +3,7 @@ package playerRepository
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log"
 	"time"
 
@@ -20,6 +21,7 @@ type (
 		InsertOnePlayer(context.Context, *player.Player) (primitive.ObjectID, error)
 		FindOnePlayerProfile(context.Context, string) (*player.PlayerProfileBson, error)
 		InsertOnePlayerTransaction(context.Context, *player.PlayerTransaction) error
+		GetPlayerSavingAccount(context.Context, string) (*player.PlayerSavingAccount, error)
 	}
 	playerRepository struct {
 		db *mongo.Client
@@ -105,4 +107,44 @@ func (r *playerRepository) InsertOnePlayerTransaction(pctx context.Context, play
 	}
 	log.Printf("Result: InsertOnePlayerTransaction: %v", result.InsertedID.(primitive.ObjectID))
 	return nil
+}
+
+func (r *playerRepository) GetPlayerSavingAccount(pctx context.Context, playerId string) (*player.PlayerSavingAccount, error) {
+	ctx, cancel := context.WithTimeout(pctx, 10*time.Second)
+	defer cancel()
+	db := r.playerDbConn(ctx)
+	col := db.Collection("player_transections")
+	fmt.Println(playerId)
+	filter := bson.A{
+		bson.D{{Key: "$match", Value: bson.D{{Key: "player_id", Value: playerId}}}},
+		bson.D{{Key: "$group", Value: bson.D{
+			{Key: "_id", Value: "$player_id"},
+			{Key: "balance", Value: bson.D{{Key: "$sum", Value: "$amount"}}},
+		}}},
+		bson.D{
+			{Key: "$project", Value: bson.D{
+				{Key: "player_id", Value: "$_id"},
+				{Key: "_id", Value: 0},
+				{Key: "balance", Value: 1},
+			},
+			}},
+	}
+	cursor, err := col.Aggregate(ctx, filter)
+	if err != nil {
+		log.Printf("Error: GetPlayerSavingAccount: %s", err.Error())
+
+		return nil, errors.New("error: faild to get player saving account")
+	}
+
+	result := new(player.PlayerSavingAccount)
+	for cursor.Next(ctx) {
+		if err := cursor.Decode(result); err != nil {
+			log.Printf("Error: GetPlayerSavingAccount: %s", err.Error())
+			return nil, errors.New("error: faild to get player saving account")
+
+		}
+
+	}
+	fmt.Println("ererer", result)
+	return result, nil
 }
