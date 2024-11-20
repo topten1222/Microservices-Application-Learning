@@ -3,9 +3,11 @@ package playerUsecase
 import (
 	"context"
 	"errors"
+	"log"
 	"time"
 
 	"github.com/topten1222/hello_sekai/modules/player"
+	playerPb "github.com/topten1222/hello_sekai/modules/player/playerPb"
 	"github.com/topten1222/hello_sekai/modules/player/playerRepository"
 	"github.com/topten1222/hello_sekai/utils"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -18,6 +20,7 @@ type (
 		FindOnePlayerProfile(context.Context, string) (*player.PlayerProfile, error)
 		AddPlayerMoney(context.Context, *player.CreatePlayerTransectionReq) (*player.PlayerSavingAccount, error)
 		GetPlayerSavingAccount(context.Context, string) (*player.PlayerSavingAccount, error)
+		FindOnePlayerCredentail(context.Context, string, string) (*playerPb.PlayerProfile, error)
 	}
 
 	playerUsecase struct {
@@ -90,4 +93,23 @@ func (u *playerUsecase) AddPlayerMoney(pctx context.Context, playerTransaction *
 
 func (u *playerUsecase) GetPlayerSavingAccount(pctx context.Context, playerId string) (*player.PlayerSavingAccount, error) {
 	return u.playerRepository.GetPlayerSavingAccount(pctx, playerId)
+}
+
+func (u *playerUsecase) FindOnePlayerCredentail(pctx context.Context, email, password string) (*playerPb.PlayerProfile, error) {
+	result, err := u.playerRepository.FindOnePlayerCredential(pctx, email)
+	if err != nil {
+		return nil, err
+	}
+	if err := bcrypt.CompareHashAndPassword([]byte(password), []byte(result.Password)); err != nil {
+		log.Printf("Error: invalida password %s", err.Error())
+		return nil, errors.New("error: invalid password")
+	}
+	loc, _ := time.LoadLocation("Asia/Bangkok")
+	return &playerPb.PlayerProfile{
+		Id:        result.Id.Hex(),
+		Email:     result.Email,
+		Username:  result.Username,
+		CreatedAt: result.CreatedAt.In(loc).String(),
+		UpdatedAt: result.UpdatedAt.In(loc).String(),
+	}, nil
 }

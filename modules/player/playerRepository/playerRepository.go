@@ -22,6 +22,7 @@ type (
 		FindOnePlayerProfile(context.Context, string) (*player.PlayerProfileBson, error)
 		InsertOnePlayerTransaction(context.Context, *player.PlayerTransaction) error
 		GetPlayerSavingAccount(context.Context, string) (*player.PlayerSavingAccount, error)
+		FindOnePlayerCredential(context.Context, string) (*player.Player, error)
 	}
 	playerRepository struct {
 		db *mongo.Client
@@ -146,5 +147,21 @@ func (r *playerRepository) GetPlayerSavingAccount(pctx context.Context, playerId
 
 	}
 	fmt.Println("ererer", result)
+	return result, nil
+}
+
+func (r *playerRepository) FindOnePlayerCredential(pctx context.Context, email string) (*player.Player, error) {
+	ctx, cancel := context.WithTimeout(pctx, 10*time.Second)
+	defer cancel()
+
+	db := r.playerDbConn(ctx)
+	col := db.Collection("players")
+
+	result := new(player.Player)
+	err := col.FindOne(ctx, bson.M{"email": email}).Decode(result)
+	if err != nil {
+		log.Printf("Error: FindOnePlayerCredential: %s", err.Error())
+		return nil, errors.New("Email is invalid")
+	}
 	return result, nil
 }
