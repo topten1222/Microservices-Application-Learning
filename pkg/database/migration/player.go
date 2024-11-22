@@ -11,6 +11,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"golang.org/x/crypto/bcrypt"
 )
 
 func playerDbConn(pctx context.Context, cfg *config.Config) *mongo.Database {
@@ -34,9 +35,12 @@ func PlayerMigrate(pctx context.Context, cfg *config.Config) {
 	documents := func() []interface{} {
 		players := []*player.Player{
 			{
-				Id:       primitive.NewObjectID(),
-				Email:    "player0001@sekai.com",
-				Password: "123456",
+				Id:    primitive.NewObjectID(),
+				Email: "player0001@sekai.com",
+				Password: func() string {
+					hashPass, _ := bcrypt.GenerateFromPassword([]byte("123456"), bcrypt.DefaultCost)
+					return string(hashPass)
+				}(),
 				Username: "player001",
 				PlayerRoles: []player.PlayerRole{
 					{
@@ -47,9 +51,12 @@ func PlayerMigrate(pctx context.Context, cfg *config.Config) {
 				CreatedAt: utils.LocalTime(),
 			},
 			{
-				Id:       primitive.NewObjectID(),
-				Email:    "player0002@sekai.com",
-				Password: "123456",
+				Id:    primitive.NewObjectID(),
+				Email: "player0002@sekai.com",
+				Password: func() string {
+					hashPass, _ := bcrypt.GenerateFromPassword([]byte("123456"), bcrypt.DefaultCost)
+					return string(hashPass)
+				}(),
 				Username: "player002",
 				PlayerRoles: []player.PlayerRole{
 					{
@@ -60,9 +67,12 @@ func PlayerMigrate(pctx context.Context, cfg *config.Config) {
 				CreatedAt: utils.LocalTime(),
 			},
 			{
-				Id:       primitive.NewObjectID(),
-				Email:    "player0003@sekai.com",
-				Password: "123456",
+				Id:    primitive.NewObjectID(),
+				Email: "player0003@sekai.com",
+				Password: func() string {
+					hashPass, _ := bcrypt.GenerateFromPassword([]byte("123456"), bcrypt.DefaultCost)
+					return string(hashPass)
+				}(),
 				Username: "player003",
 				PlayerRoles: []player.PlayerRole{
 					{
@@ -73,9 +83,12 @@ func PlayerMigrate(pctx context.Context, cfg *config.Config) {
 				CreatedAt: utils.LocalTime(),
 			},
 			{
-				Id:       primitive.NewObjectID(),
-				Email:    "admin001@sekai.com",
-				Password: "123456",
+				Id:    primitive.NewObjectID(),
+				Email: "admin001@sekai.com",
+				Password: func() string {
+					hashPass, _ := bcrypt.GenerateFromPassword([]byte("123456"), bcrypt.DefaultCost)
+					return string(hashPass)
+				}(),
 				Username: "admin001",
 				PlayerRoles: []player.PlayerRole{
 					{

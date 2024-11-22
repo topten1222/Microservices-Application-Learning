@@ -3,6 +3,7 @@ package playerUsecase
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log"
 	"time"
 
@@ -100,7 +101,10 @@ func (u *playerUsecase) FindOnePlayerCredentail(pctx context.Context, email, pas
 	if err != nil {
 		return nil, err
 	}
-	if err := bcrypt.CompareHashAndPassword([]byte(password), []byte(result.Password)); err != nil {
+	fmt.Println(result.Password)
+	fmt.Println(password)
+
+	if err := bcrypt.CompareHashAndPassword([]byte(result.Password), []byte(password)); err != nil {
 		log.Printf("Error: invalida password %s", err.Error())
 		return nil, errors.New("error: invalid password")
 	}

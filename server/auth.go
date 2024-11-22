@@ -13,7 +13,7 @@ import (
 func (s *server) authService() {
 	authRepo := authRepository.NewAuthRepository(s.db)
 	authUsecase := authUsecase.NewAuthUsecase(authRepo)
-	authHandler.NewAuthHttpHandler(s.cfg, authUsecase)
+	httpHandler := authHandler.NewAuthHttpHandler(s.cfg, authUsecase)
 	authHandler.NewAuthGrpcHandler(authUsecase)
 
 	//grpc
@@ -28,6 +28,7 @@ func (s *server) authService() {
 	auth := s.app.Group("/auth_v1")
 
 	auth.GET("/", s.healthCheckService)
+	auth.POST("/auth/login", httpHandler.Login)
 	// Health Check
 
 }
