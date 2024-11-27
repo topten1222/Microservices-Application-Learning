@@ -19,7 +19,7 @@ func NewAuthGrpcHandler(authUsecase authusecase.AuthusecaseService) *AuthGrpHand
 }
 
 func (g *AuthGrpHandler) CredentialSearch(ctx context.Context, req *authPb.AccessTokenSearchReq) (*authPb.AccessTokenSearchRes, error) {
-	return nil, nil
+	return g.authUsecase.AccessTokenSearch(ctx, req.AccessToken)
 }
 
 func (g *AuthGrpHandler) RolesCount(ctx context.Context, req *authPb.RoleCountReq) (*authPb.RoleCountRes, error) {

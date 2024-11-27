@@ -2,6 +2,7 @@ package authUsecase
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"strings"
@@ -9,9 +10,11 @@ import (
 
 	"github.com/topten1222/hello_sekai/config"
 	"github.com/topten1222/hello_sekai/modules/auth"
+	authPb "github.com/topten1222/hello_sekai/modules/auth/authPb"
 	authrepository "github.com/topten1222/hello_sekai/modules/auth/authRepository"
 	"github.com/topten1222/hello_sekai/modules/player"
 	playerPb "github.com/topten1222/hello_sekai/modules/player/playerPb"
+
 	"github.com/topten1222/hello_sekai/pkg/jwtauth"
 	"github.com/topten1222/hello_sekai/utils"
 )
@@ -21,6 +24,7 @@ type (
 		Login(context.Context, *config.Config, *auth.PlayerLoginReq) (*auth.ProfileIntercepter, error)
 		RefreshToken(context.Context, *config.Config, *auth.RefreshTokenReq) (*auth.ProfileIntercepter, error)
 		Logout(context.Context, string) (int64, error)
+		AccessTokenSearch(context.Context, string) (*authPb.AccessTokenSearchRes, error)
 	}
 
 	authusecase struct {
@@ -141,4 +145,21 @@ func (u *authusecase) RefreshToken(pctx context.Context, cfg *config.Config, req
 
 func (u *authusecase) Logout(pctx context.Context, credentailId string) (int64, error) {
 	return u.authRepo.DeleteOnePlayerCredentail(pctx, credentailId)
+}
+
+func (u *authusecase) AccessTokenSearch(pctx context.Context, accessToken string) (*authPb.AccessTokenSearchRes, error) {
+	credential, err := u.authRepo.FindOneAccessToken(pctx, accessToken)
+	if err != nil {
+		return &authPb.AccessTokenSearchRes{
+			InValid: false,
+		}, err
+	}
+	if credential == nil {
+		return &authPb.AccessTokenSearchRes{
+			InValid: false,
+		}, errors.New("access token invalid")
+	}
+	return &authPb.AccessTokenSearchRes{
+		InValid: true,
+	}, nil
 }

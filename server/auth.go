@@ -14,13 +14,13 @@ func (s *server) authService() {
 	authRepo := authRepository.NewAuthRepository(s.db)
 	authUsecase := authUsecase.NewAuthUsecase(authRepo)
 	httpHandler := authHandler.NewAuthHttpHandler(s.cfg, authUsecase)
-	authHandler.NewAuthGrpcHandler(authUsecase)
+	grpcHandler := authHandler.NewAuthGrpcHandler(authUsecase)
 
 	//grpc
 
 	go func() {
 		grpcServer, list := grpccon.NewGrpcServer(&s.cfg.Jwt, s.cfg.Grpc.AuthUrl)
-		authPb.RegisterAuthGrpcServiceServer(grpcServer, authHandler.NewAuthGrpcHandler(authUsecase))
+		authPb.RegisterAuthGrpcServiceServer(grpcServer, grpcHandler)
 		log.Printf("Auth Grpc server listening on %s", s.cfg.Grpc.AuthUrl)
 		grpcServer.Serve(list)
 	}()

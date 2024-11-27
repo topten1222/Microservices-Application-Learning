@@ -24,6 +24,7 @@ type (
 		FindOnePlayerProfileToRefresh(context.Context, string, *playerPb.FindOnePlayerProfileToRefreshReq) (*playerPb.PlayerProfile, error)
 		UpdateOnePlayerCredentail(context.Context, string, *auth.UpdateRefreshTokenReq) error
 		DeleteOnePlayerCredentail(context.Context, string) (int64, error)
+		FindOneAccessToken(context.Context, string) (*auth.Credential, error)
 	}
 
 	authrepository struct {
@@ -147,4 +148,21 @@ func (r *authrepository) DeleteOnePlayerCredentail(pctx context.Context, credent
 	}
 	log.Printf("Result : %s", result)
 	return result.DeletedCount, nil
+}
+
+func (r *authrepository) FindOneAccessToken(pctx context.Context, accessToken string) (*auth.Credential, error) {
+	ctx, cancel := context.WithTimeout(pctx, 10*time.Second)
+	defer cancel()
+
+	db := r.authDbConn(ctx)
+	col := db.Collection("auth")
+
+	credentail := new(auth.Credential)
+	if err := col.FindOne(ctx, bson.M{
+		"access_token": accessToken,
+	}).Decode(credentail); err != nil {
+		return nil, err
+	}
+
+	return credentail, nil
 }
