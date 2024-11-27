@@ -23,6 +23,7 @@ type (
 		InsertOnePlayerTransaction(context.Context, *player.PlayerTransaction) error
 		GetPlayerSavingAccount(context.Context, string) (*player.PlayerSavingAccount, error)
 		FindOnePlayerCredential(context.Context, string) (*player.Player, error)
+		FindOnePlayerProfileToRefresh(context.Context, string) (*player.Player, error)
 	}
 	playerRepository struct {
 		db *mongo.Client
@@ -164,4 +165,20 @@ func (r *playerRepository) FindOnePlayerCredential(pctx context.Context, email s
 		return nil, errors.New("Email is invalid")
 	}
 	return result, nil
+}
+
+func (r *playerRepository) FindOnePlayerProfileToRefresh(pctx context.Context, playerId string) (*player.Player, error) {
+	ctx, cancel := context.WithTimeout(pctx, 10*time.Second)
+	defer cancel()
+
+	db := r.playerDbConn(ctx)
+	col := db.Collection("players")
+
+	result := new(player.Player)
+	if err := col.FindOne(ctx, bson.M{"_id": utils.ConvertToObjectId(playerId)}).Decode(result); err != nil {
+		log.Printf("Error: FindOnePlayerCredentail: %s", err.Error())
+		return nil, errors.New("error: player profile not found")
+	}
+	return result, nil
+
 }

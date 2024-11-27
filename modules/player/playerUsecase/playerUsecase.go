@@ -22,6 +22,7 @@ type (
 		AddPlayerMoney(context.Context, *player.CreatePlayerTransectionReq) (*player.PlayerSavingAccount, error)
 		GetPlayerSavingAccount(context.Context, string) (*player.PlayerSavingAccount, error)
 		FindOnePlayerCredentail(context.Context, string, string) (*playerPb.PlayerProfile, error)
+		FindOnePlayerToRefresh(context.Context, string) (*playerPb.PlayerProfile, error)
 	}
 
 	playerUsecase struct {
@@ -108,11 +109,39 @@ func (u *playerUsecase) FindOnePlayerCredentail(pctx context.Context, email, pas
 		log.Printf("Error: invalida password %s", err.Error())
 		return nil, errors.New("error: invalid password")
 	}
+	roleCode := 0
+	for _, v := range result.PlayerRoles {
+		roleCode += v.RoleCode
+	}
+
 	loc, _ := time.LoadLocation("Asia/Bangkok")
 	return &playerPb.PlayerProfile{
 		Id:        result.Id.Hex(),
 		Email:     result.Email,
 		Username:  result.Username,
+		RoleCode:  int32(roleCode),
+		CreatedAt: result.CreatedAt.In(loc).String(),
+		UpdatedAt: result.UpdatedAt.In(loc).String(),
+	}, nil
+}
+
+func (u *playerUsecase) FindOnePlayerToRefresh(pctx context.Context, playerId string) (*playerPb.PlayerProfile, error) {
+	result, err := u.playerRepository.FindOnePlayerProfileToRefresh(pctx, playerId)
+	if err != nil {
+		return nil, err
+	}
+	roleCode := 0
+	for _, v := range result.PlayerRoles {
+		roleCode += v.RoleCode
+	}
+
+	loc, _ := time.LoadLocation("Asia/Bangkok")
+
+	return &playerPb.PlayerProfile{
+		Id:        result.Id.Hex(),
+		Email:     result.Email,
+		Username:  result.Username,
+		RoleCode:  int32(roleCode),
 		CreatedAt: result.CreatedAt.In(loc).String(),
 		UpdatedAt: result.UpdatedAt.In(loc).String(),
 	}, nil

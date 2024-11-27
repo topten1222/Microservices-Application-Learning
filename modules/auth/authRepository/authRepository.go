@@ -21,6 +21,8 @@ type (
 		InsertOnePlayerCredentail(context.Context, *auth.Credential) (primitive.ObjectID, error)
 		CredentialSearch(context.Context, string, *playerPb.CredentialSearchReq) (*playerPb.PlayerProfile, error)
 		FindOnePlayerCredentail(context.Context, string) (*auth.Credential, error)
+		FindOnePlayerProfileToRefresh(context.Context, string, *playerPb.FindOnePlayerProfileToRefreshReq) (*playerPb.PlayerProfile, error)
+		UpdateOnePlayerCredentail(context.Context, string, *auth.UpdateRefreshTokenReq) error
 	}
 
 	authrepository struct {
@@ -55,6 +57,24 @@ func (r *authrepository) CredentialSearch(pctx context.Context, grpcUrl string, 
 	return result, nil
 }
 
+func (r *authrepository) FindOnePlayerProfileToRefresh(pctx context.Context, grpcUrl string, req *playerPb.FindOnePlayerProfileToRefreshReq) (*playerPb.PlayerProfile, error) {
+	ctx, cancel := context.WithTimeout(pctx, 30*time.Second)
+	defer cancel()
+
+	conn, err := grpccon.NewGrpcClient(grpcUrl)
+	if err != nil {
+		log.Printf("Error: grpc connection failed: %s", err.Error())
+		return nil, errors.New("error: grpc connection failed")
+
+	}
+	result, err := conn.Player().FindOnePlayerProfileToRefresh(ctx, req)
+	if err != nil {
+		log.Printf("Error: FindOnePlayerProfileToRefresh failed: %s", err.Error())
+		return nil, errors.New("error: find one player profile to refresh failed")
+	}
+	return result, nil
+}
+
 func (r authrepository) InsertOnePlayerCredentail(ctx context.Context, req *auth.Credential) (primitive.ObjectID, error) {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
@@ -84,4 +104,29 @@ func (r *authrepository) FindOnePlayerCredentail(ctx context.Context, credential
 	}
 
 	return result, nil
+}
+
+func (r *authrepository) UpdateOnePlayerCredentail(pctx context.Context, credentialId string, req *auth.UpdateRefreshTokenReq) error {
+	ctx, cancel := context.WithTimeout(pctx, 10*time.Second)
+	defer cancel()
+	db := r.authDbConn(ctx)
+	col := db.Collection("auth")
+
+	_, err := col.UpdateOne(
+		ctx,
+		bson.M{"_id": utils.ConvertToObjectId(credentialId)},
+		bson.M{
+			"$set": bson.M{
+				"player_id":     req.PlayerId,
+				"access_token":  req.AccessToken,
+				"refresh_token": req.RefreshToken,
+				"updated_at":    req.UpdatedAt,
+			},
+		},
+	)
+	if err != nil {
+		log.Printf("Error UpdateOnePlayerCredentail failed: %s", err.Error())
+		return errors.New("error: update one player credential failed")
+	}
+	return nil
 }
