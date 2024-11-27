@@ -20,6 +20,7 @@ type (
 	AuthusecaseService interface {
 		Login(context.Context, *config.Config, *auth.PlayerLoginReq) (*auth.ProfileIntercepter, error)
 		RefreshToken(context.Context, *config.Config, *auth.RefreshTokenReq) (*auth.ProfileIntercepter, error)
+		Logout(context.Context, string) (int64, error)
 	}
 
 	authusecase struct {
@@ -136,4 +137,8 @@ func (u *authusecase) RefreshToken(pctx context.Context, cfg *config.Config, req
 			UpdatedAt:    credentail.UpdatedAt.In(loc),
 		},
 	}, nil
+}
+
+func (u *authusecase) Logout(pctx context.Context, credentailId string) (int64, error) {
+	return u.authRepo.DeleteOnePlayerCredentail(pctx, credentailId)
 }
