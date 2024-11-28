@@ -1,6 +1,7 @@
 package server
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/labstack/echo/v4"
@@ -13,6 +14,7 @@ type healthCheck struct {
 }
 
 func (s *server) healthCheckService(c echo.Context) error {
+	fmt.Println("343434")
 	return response.SuccessResponse(c, http.StatusOK, &healthCheck{
 		App:    s.cfg.App.Name,
 		Status: "OK",

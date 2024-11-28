@@ -23,5 +23,5 @@ func (g *AuthGrpHandler) CredentialSearch(ctx context.Context, req *authPb.Acces
 }
 
 func (g *AuthGrpHandler) RolesCount(ctx context.Context, req *authPb.RoleCountReq) (*authPb.RoleCountRes, error) {
-	return nil, nil
+	return g.authUsecase.RolesCount(ctx)
 }
