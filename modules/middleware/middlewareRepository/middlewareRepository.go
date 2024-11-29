@@ -28,6 +28,7 @@ func NewMiddlewareRepository() MiddlewareRepositoryHandlerService {
 func (r *middlewaRerepository) AccessTokenSearch(pctx context.Context, grpcUrl, accessToken string) error {
 	ctx, cancel := context.WithTimeout(pctx, 10*time.Second)
 	defer cancel()
+	jwtauth.SetApiKeyInContext(&ctx)
 	conn, err := grpccon.NewGrpcClient(grpcUrl)
 	if err != nil {
 		log.Printf("Error: grpce connection faild %s", err)
@@ -53,7 +54,7 @@ func (r *middlewaRerepository) AccessTokenSearch(pctx context.Context, grpcUrl, 
 func (r *middlewaRerepository) RolesCount(pctx context.Context, grpcUrl string) (int64, error) {
 	ctx, cancel := context.WithTimeout(pctx, 30*time.Second)
 	defer cancel()
-
+	jwtauth.SetApiKeyInContext(&ctx)
 	conn, err := grpccon.NewGrpcClient(grpcUrl)
 	if err != nil {
 		log.Printf("Error: gRPC connection failed: %s", err.Error())

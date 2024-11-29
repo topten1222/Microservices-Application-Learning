@@ -1,6 +1,8 @@
 package grpccon
 
 import (
+	"context"
+	"errors"
 	"log"
 	"net"
 
@@ -9,8 +11,10 @@ import (
 	inventoryPb "github.com/topten1222/hello_sekai/modules/inventory/inventoryPb"
 	itemPb "github.com/topten1222/hello_sekai/modules/item/itemPb"
 	playerPb "github.com/topten1222/hello_sekai/modules/player/playerPb"
+	"github.com/topten1222/hello_sekai/pkg/jwtauth"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/metadata"
 )
 
 type (
@@ -25,8 +29,32 @@ type (
 		client *grpc.ClientConn
 	}
 
-	grpcAuth struct{}
+	grpcAuth struct {
+		secretKey string
+	}
 )
+
+func (g *grpcAuth) unaryAuthorization(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
+	md, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		return nil, errors.New("Metadata Not Found")
+	}
+	authHeader, ok := md["auth"]
+	if !ok {
+		return nil, errors.New("Metadata Not Found")
+	}
+	if len(authHeader) == 0 {
+		return nil, errors.New("Metadata Not Found")
+	}
+
+	claims, err := jwtauth.ParseToken(g.secretKey, string(authHeader[0]))
+	if err != nil {
+		log.Printf("Error: Parse token faild %s", err)
+		return nil, err
+	}
+	log.Printf("Claims: %s", claims)
+	return handler(ctx, req)
+}
 
 func (g *grpcClientFactory) Auth() authPb.AuthGrpcServiceClient {
 	return authPb.NewAuthGrpcServiceClient(g.client)
@@ -56,10 +84,19 @@ func NewGrpcClient(host string) (GrpcClientFactoryHandler, error) {
 
 func NewGrpcServer(cfg *config.Jwt, host string) (*grpc.Server, net.Listener) {
 	opts := make([]grpc.ServerOption, 0)
-	grpcServer := grpc.NewServer(opts...)
-	lit, err := net.Listen("tcp", host)
-	if err != nil {
-		log.Fatal("Error:: ", err)
+
+	grpcAuth := &grpcAuth{
+		secretKey: cfg.ApiSecretKey,
 	}
-	return grpcServer, lit
+
+	opts = append(opts, grpc.UnaryInterceptor(grpcAuth.unaryAuthorization))
+
+	grpcServer := grpc.NewServer(opts...)
+
+	lis, err := net.Listen("tcp", host)
+	if err != nil {
+		log.Fatalf("Error: Failed to listen: %v", err)
+	}
+
+	return grpcServer, lis
 }

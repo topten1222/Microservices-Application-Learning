@@ -10,6 +10,7 @@ import (
 	"github.com/topten1222/hello_sekai/modules/auth"
 	playerPb "github.com/topten1222/hello_sekai/modules/player/playerPb"
 	"github.com/topten1222/hello_sekai/pkg/grpccon"
+	"github.com/topten1222/hello_sekai/pkg/jwtauth"
 	"github.com/topten1222/hello_sekai/utils"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -44,6 +45,7 @@ func (r *authrepository) authDbConn(pctx context.Context) *mongo.Database {
 func (r *authrepository) CredentialSearch(pctx context.Context, grpcUrl string, req *playerPb.CredentialSearchReq) (*playerPb.PlayerProfile, error) {
 	ctx, cancel := context.WithTimeout(pctx, 10*time.Second)
 	defer cancel()
+	jwtauth.SetApiKeyInContext(&ctx)
 	conn, err := grpccon.NewGrpcClient(grpcUrl)
 	if err != nil {
 		log.Printf("Error: grpc connection faild: %s", err.Error())
@@ -63,7 +65,7 @@ func (r *authrepository) CredentialSearch(pctx context.Context, grpcUrl string, 
 func (r *authrepository) FindOnePlayerProfileToRefresh(pctx context.Context, grpcUrl string, req *playerPb.FindOnePlayerProfileToRefreshReq) (*playerPb.PlayerProfile, error) {
 	ctx, cancel := context.WithTimeout(pctx, 30*time.Second)
 	defer cancel()
-
+	jwtauth.SetApiKeyInContext(&ctx)
 	conn, err := grpccon.NewGrpcClient(grpcUrl)
 	if err != nil {
 		log.Printf("Error: grpc connection failed: %s", err.Error())

@@ -15,6 +15,7 @@ import (
 	"github.com/topten1222/hello_sekai/modules/middleware/middlewareHandler"
 	middlewaRerepository "github.com/topten1222/hello_sekai/modules/middleware/middlewareRepository"
 	"github.com/topten1222/hello_sekai/modules/middleware/middlewareUsecase"
+	"github.com/topten1222/hello_sekai/pkg/jwtauth"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -57,6 +58,8 @@ func Start(pctx context.Context, cfg *config.Config, db *mongo.Client) {
 		cfg:        cfg,
 		middleware: newMiddleware(cfg),
 	}
+
+	jwtauth.SetApiKey(cfg.Jwt.ApiSecretKey)
 
 	s.app.Use(middleware.TimeoutWithConfig(middleware.TimeoutConfig{
 		Skipper:      middleware.DefaultSkipper,

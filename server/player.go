@@ -14,11 +14,11 @@ func (s *server) playerService() {
 	repo := playerRepository.NewPlayerRepository(s.db)
 	usecase := playerUsecase.NewPlayerUsecase(repo)
 	httpHandler := playerHandler.NewPlayerHttpHandler(s.cfg, usecase)
-	playerHandler.NewPlayerGrpcHandler(usecase)
+	grpcHandler := playerHandler.NewPlayerGrpcHandler(usecase)
 	playerHandler.NewPlayerQueueHandler(s.cfg, usecase)
 	go func() {
 		grpcServer, list := grpccon.NewGrpcServer(&s.cfg.Jwt, s.cfg.Grpc.PlayerUrl)
-		playerPb.RegisterPlayerGrpcServiceServer(grpcServer, playerHandler.NewPlayerGrpcHandler(usecase))
+		playerPb.RegisterPlayerGrpcServiceServer(grpcServer, grpcHandler)
 		log.Printf("Player grpc server listening on %s", s.cfg.Grpc.PlayerUrl)
 		grpcServer.Serve(list)
 	}()
@@ -27,7 +27,7 @@ func (s *server) playerService() {
 	player.GET("/", s.healthCheckService)
 	player.POST("/player/register", httpHandler.CreatePlayer)
 	player.GET("/player/:player_id", httpHandler.FindOnePlayerProfile)
-	player.POST("/player/add-money", httpHandler.AddPlayerMoney)
-	player.GET("/player/account/:player_id", httpHandler.GetPlayerSavingAccount)
+	player.POST("/player/add-money", httpHandler.AddPlayerMoney, s.middleware.JwtAuthorization)
+	player.GET("/player/saving-account/my-account", httpHandler.GetPlayerSavingAccount, s.middleware.JwtAuthorization)
 
 }
