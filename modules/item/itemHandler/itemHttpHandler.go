@@ -18,6 +18,7 @@ type (
 		CreateItem(echo.Context) error
 		FindOneItem(echo.Context) error
 		FindManyItems(echo.Context) error
+		EditItem(echo.Context) error
 	}
 
 	itemHttpHandler struct {
@@ -71,6 +72,22 @@ func (h *itemHttpHandler) FindManyItems(c echo.Context) error {
 		return response.ErrResponse(c, http.StatusBadRequest, err.Error())
 	}
 	res, err := h.itemUsecase.FindManyItems(ctx, h.cfg.Paginate.ItemNextPageBaseUrl, req)
+	if err != nil {
+		return response.ErrResponse(c, http.StatusBadRequest, err.Error())
+	}
+	return response.SuccessResponse(c, http.StatusOK, res)
+}
+
+func (h *itemHttpHandler) EditItem(c echo.Context) error {
+	ctx := context.Background()
+
+	itemId := strings.TrimPrefix(c.Param("item_id"), "item:")
+	wrapper := request.ContextWrapper(c)
+	req := new(item.ItemUpdateReq)
+	if err := wrapper.Bind(req); err != nil {
+		return response.ErrResponse(c, http.StatusBadRequest, err.Error())
+	}
+	res, err := h.itemUsecase.EditItem(ctx, itemId, req)
 	if err != nil {
 		return response.ErrResponse(c, http.StatusBadRequest, err.Error())
 	}

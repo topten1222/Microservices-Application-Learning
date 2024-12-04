@@ -20,6 +20,7 @@ type (
 		CreateItem(context.Context, *item.CreateItemReq) (any, error)
 		FindOneItem(context.Context, string) (*item.ItemShowCase, error)
 		FindManyItems(context.Context, string, *item.ItemSearchReq) (*models.PaginateRes, error)
+		EditItem(context.Context, string, *item.ItemUpdateReq) (*item.ItemShowCase, error)
 	}
 
 	itemUsecase struct {
@@ -125,4 +126,30 @@ func (u *itemUsecase) FindManyItems(pctx context.Context, basePaginationUrl stri
 			Herf:  fmt.Sprintf("%s?limit=%d&title=%s&start=%s", basePaginationUrl, req.Limit, req.Title, results[len(results)-1].ItemId),
 		},
 	}, nil
+}
+
+func (u *itemUsecase) EditItem(pctx context.Context, itemId string, req *item.ItemUpdateReq) (*item.ItemShowCase, error) {
+	updateReq := bson.M{}
+
+	if req.Title != "" {
+		if !u.itemRepo.IsUniqueItem(pctx, req.Title) {
+			return nil, errors.New("error: this title is already exits")
+		}
+		updateReq["title"] = req.Title
+	}
+	if req.ImageUrl != "" {
+		updateReq["image_url"] = req.ImageUrl
+	}
+	if req.Damage > 0 {
+		updateReq["damage"] = req.Damage
+	}
+	if req.Price >= 0 {
+		updateReq["price"] = req.Price
+	}
+	updateReq["updated_at"] = utils.LocalTime()
+
+	if err := u.itemRepo.UpdateOneItem(pctx, itemId, updateReq); err != nil {
+		return nil, err
+	}
+	return u.FindOneItem(pctx, itemId)
 }

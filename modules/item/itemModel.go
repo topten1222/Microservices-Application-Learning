@@ -24,10 +24,10 @@ type (
 	}
 
 	ItemUpdateReq struct {
-		Title    string  `json:"title" validate:"required,max=64"`
-		Price    float64 `json:"price" validate:"required"`
-		ImageUrl string  `json:"image_url" validate:"required,max=255"`
-		Damage   int     `json:"damage" validate:"required"`
+		Title    string  `json:"title" validate:"max=64"`
+		Price    float64 `json:"price"`
+		ImageUrl string  `json:"image_url" validate:"max=255"`
+		Damage   int     `json:"damage"`
 	}
 
 	EnableOrDisableItemReq struct {

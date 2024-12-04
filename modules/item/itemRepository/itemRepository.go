@@ -22,6 +22,7 @@ type (
 		FindOneItem(context.Context, string) (*item.Item, error)
 		FindManyItems(context.Context, primitive.D, []*options.FindOptions) ([]*item.ItemShowCase, error)
 		CountItems(context.Context, primitive.D) (int64, error)
+		UpdateOneItem(context.Context, string, primitive.M) error
 	}
 
 	itemRepository struct {
@@ -130,4 +131,19 @@ func (r *itemRepository) CountItems(pctx context.Context, filter primitive.D) (i
 	}
 
 	return count, nil
+}
+
+func (r *itemRepository) UpdateOneItem(pctx context.Context, itemId string, req primitive.M) error {
+	ctx, cancel := context.WithTimeout(pctx, 10*time.Second)
+	defer cancel()
+
+	db := r.itemDbConn(ctx)
+	col := db.Collection("items")
+	result, err := col.UpdateOne(ctx, bson.M{"_id": utils.ConvertToObjectId(itemId)}, bson.M{"$set": req})
+	if err != nil {
+		log.Printf("Error: Update one item %s", err.Error())
+		return errors.New("error: update one item")
+	}
+	log.Printf("success update %s", result)
+	return nil
 }
