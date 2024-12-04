@@ -23,6 +23,7 @@ type (
 		FindManyItems(context.Context, primitive.D, []*options.FindOptions) ([]*item.ItemShowCase, error)
 		CountItems(context.Context, primitive.D) (int64, error)
 		UpdateOneItem(context.Context, string, primitive.M) error
+		EnableOrDisableItem(context.Context, string, bool) error
 	}
 
 	itemRepository struct {
@@ -34,7 +35,7 @@ func NewItemRepository(db *mongo.Client) ItemRepositoryService {
 	return &itemRepository{db: db}
 }
 
-func (r *itemRepository) itemDbConn(pctx context.Context) *mongo.Database {
+func (r *itemRepository) itemDbConn(_ context.Context) *mongo.Database {
 	return r.db.Database("item_db")
 }
 
@@ -96,14 +97,14 @@ func (r *itemRepository) FindManyItems(pctx context.Context, filter primitive.D,
 	if err != nil {
 		log.Printf("Error: find many items %s", err.Error())
 
-		return make([]*item.ItemShowCase, 0), errors.New("Error: Find Many items faild")
+		return make([]*item.ItemShowCase, 0), errors.New("error: Find Many items faild")
 	}
 	results := make([]*item.ItemShowCase, 0)
 	for cursors.Next(ctx) {
 		result := new(item.Item)
 		if err := cursors.Decode(result); err != nil {
 			log.Printf("Error: Find many item faild %s", err.Error())
-			return make([]*item.ItemShowCase, 0), errors.New("Error: find many item faild")
+			return make([]*item.ItemShowCase, 0), errors.New("error: find many item faild")
 		}
 		results = append(results, &item.ItemShowCase{
 			ItemId:   result.Id.Hex(),
@@ -144,6 +145,22 @@ func (r *itemRepository) UpdateOneItem(pctx context.Context, itemId string, req 
 		log.Printf("Error: Update one item %s", err.Error())
 		return errors.New("error: update one item")
 	}
-	log.Printf("success update %s", result)
+	log.Printf("success update %v", result)
+	return nil
+}
+
+func (r *itemRepository) EnableOrDisableItem(pctx context.Context, itemId string, status bool) error {
+	ctx, cancel := context.WithTimeout(pctx, 10*time.Second)
+	defer cancel()
+
+	db := r.itemDbConn(ctx)
+	col := db.Collection("items")
+
+	result, err := col.UpdateOne(ctx, bson.M{"_id": utils.ConvertToObjectId(itemId)}, bson.M{"$set": bson.M{"usage_status": status}})
+	if err != nil {
+		log.Printf("Error: Enable or Disable item %s", err.Error())
+		return errors.New("error: Enable or Disable item faild")
+	}
+	log.Printf("success update %v", result)
 	return nil
 }

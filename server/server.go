@@ -34,7 +34,7 @@ func newMiddleware(cfg *config.Config) middlewareHandler.MiddlewareHandlerServic
 	return middlewareHandler.NewMiddlewareHandler(cfg, usecase)
 }
 
-func (s *server) gracefulShutdow(pctx context.Context, quit <-chan os.Signal) {
+func (s *server) gracefulShutdow(_ context.Context, quit <-chan os.Signal) {
 	log.Printf("Start service: %s", s.cfg.App.Name)
 	<-quit
 	log.Printf("shutting down service: %s", s.cfg.App.Name)

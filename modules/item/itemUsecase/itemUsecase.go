@@ -21,6 +21,7 @@ type (
 		FindOneItem(context.Context, string) (*item.ItemShowCase, error)
 		FindManyItems(context.Context, string, *item.ItemSearchReq) (*models.PaginateRes, error)
 		EditItem(context.Context, string, *item.ItemUpdateReq) (*item.ItemShowCase, error)
+		EnableOrDisableItem(context.Context, string) (bool, error)
 	}
 
 	itemUsecase struct {
@@ -74,21 +75,21 @@ func (u *itemUsecase) FindManyItems(pctx context.Context, basePaginationUrl stri
 	if req.Start != "" {
 		req.Start = strings.TrimPrefix(req.Start, "item:")
 		findItemFilter = append(findItemFilter, bson.E{
-			"_id", bson.D{{"$gt", utils.ConvertToObjectId(req.Start)}}},
+			Key: "_id", Value: bson.D{{Key: "$gt", Value: utils.ConvertToObjectId(req.Start)}}},
 		)
 	}
 	if req.Title != "" {
 		findItemFilter = append(findItemFilter, bson.E{
-			"title", primitive.Regex{Pattern: req.Title, Options: "i"},
+			Key: "title", Value: primitive.Regex{Pattern: req.Title, Options: "i"},
 		})
 		counItemsFilter = append(counItemsFilter, bson.E{
-			"title", primitive.Regex{Pattern: req.Title, Options: "i"},
+			Key: "title", Value: primitive.Regex{Pattern: req.Title, Options: "i"},
 		})
 	}
-	findItemFilter = append(findItemFilter, bson.E{"usage_status", true})
-	counItemsFilter = append(counItemsFilter, bson.E{"usage_status", true})
+	findItemFilter = append(findItemFilter, bson.E{Key: "usage_status", Value: true})
+	counItemsFilter = append(counItemsFilter, bson.E{Key: "usage_status", Value: true})
 
-	findItemOpts = append(findItemOpts, options.Find().SetSort(bson.D{{"_d", 1}}))
+	findItemOpts = append(findItemOpts, options.Find().SetSort(bson.D{{Key: "_d", Value: 1}}))
 	findItemOpts = append(findItemOpts, options.Find().SetLimit(int64(req.Limit)))
 
 	results, err := u.itemRepo.FindManyItems(pctx, findItemFilter, findItemOpts)
@@ -152,4 +153,16 @@ func (u *itemUsecase) EditItem(pctx context.Context, itemId string, req *item.It
 		return nil, err
 	}
 	return u.FindOneItem(pctx, itemId)
+}
+
+func (u *itemUsecase) EnableOrDisableItem(pctx context.Context, itemId string) (bool, error) {
+	result, err := u.itemRepo.FindOneItem(pctx, itemId)
+	if err != nil {
+		return false, err
+	}
+	isActive := !result.UsageStatus
+	if err := u.itemRepo.EnableOrDisableItem(pctx, itemId, isActive); err != nil {
+		return false, err
+	}
+	return isActive, nil
 }

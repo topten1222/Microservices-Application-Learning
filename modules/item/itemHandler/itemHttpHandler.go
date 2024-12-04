@@ -2,6 +2,7 @@ package itemHandler
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -19,6 +20,7 @@ type (
 		FindOneItem(echo.Context) error
 		FindManyItems(echo.Context) error
 		EditItem(echo.Context) error
+		EnableOrDisableItem(echo.Context) error
 	}
 
 	itemHttpHandler struct {
@@ -92,4 +94,17 @@ func (h *itemHttpHandler) EditItem(c echo.Context) error {
 		return response.ErrResponse(c, http.StatusBadRequest, err.Error())
 	}
 	return response.SuccessResponse(c, http.StatusOK, res)
+}
+
+func (h *itemHttpHandler) EnableOrDisableItem(c echo.Context) error {
+	ctx := context.Background()
+	itemId := strings.TrimPrefix(c.Param("item_id"), "item:")
+	res, err := h.itemUsecase.EnableOrDisableItem(ctx, itemId)
+	if err != nil {
+		return response.ErrResponse(c, http.StatusBadRequest, err.Error())
+	}
+	return response.SuccessResponse(c, http.StatusOK, map[string]any{
+		"message": fmt.Sprintf("item_id: %s has been updated is status to %v", itemId, res),
+	})
+
 }
