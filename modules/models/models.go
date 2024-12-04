@@ -11,16 +11,16 @@ type (
 		Limit int           `json:"limit"`
 		Tolal int64         `json:"total"`
 		First FirstPaginate `json:"first"`
-		Next  NextPaginate  `json:"last"`
+		Next  NextPaginate  `json:"next"`
 	}
 
 	FirstPaginate struct {
-		Herf  string `json:"herf"`
-		Start string `json:"start"`
+		Herf string `json:"herf"`
 	}
 
 	NextPaginate struct {
-		Herf string `json:"herf"`
+		Start string `json:"start"`
+		Herf  string `json:"herf"`
 	}
 
 	KafkaOffset struct {

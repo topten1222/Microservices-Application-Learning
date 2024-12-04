@@ -12,6 +12,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type (
@@ -19,6 +20,8 @@ type (
 		InsertOneItem(context.Context, *item.Item) (primitive.ObjectID, error)
 		IsUniqueItem(context.Context, string) bool
 		FindOneItem(context.Context, string) (*item.Item, error)
+		FindManyItems(context.Context, primitive.D, []*options.FindOptions) ([]*item.ItemShowCase, error)
+		CountItems(context.Context, primitive.D) (int64, error)
 	}
 
 	itemRepository struct {
@@ -80,4 +83,51 @@ func (r *itemRepository) FindOneItem(pctx context.Context, itemId string) (*item
 		return nil, errors.New("error: item not found")
 	}
 	return result, nil
+}
+
+func (r *itemRepository) FindManyItems(pctx context.Context, filter primitive.D, opts []*options.FindOptions) ([]*item.ItemShowCase, error) {
+	ctx, cancel := context.WithTimeout(pctx, 10*time.Second)
+	defer cancel()
+	db := r.itemDbConn(ctx)
+	col := db.Collection("items")
+
+	cursors, err := col.Find(ctx, filter, opts...)
+	if err != nil {
+		log.Printf("Error: find many items %s", err.Error())
+
+		return make([]*item.ItemShowCase, 0), errors.New("Error: Find Many items faild")
+	}
+	results := make([]*item.ItemShowCase, 0)
+	for cursors.Next(ctx) {
+		result := new(item.Item)
+		if err := cursors.Decode(result); err != nil {
+			log.Printf("Error: Find many item faild %s", err.Error())
+			return make([]*item.ItemShowCase, 0), errors.New("Error: find many item faild")
+		}
+		results = append(results, &item.ItemShowCase{
+			ItemId:   result.Id.Hex(),
+			Price:    result.Price,
+			Title:    result.Title,
+			Damage:   result.Damage,
+			ImageUrl: result.ImageUrl,
+		})
+	}
+
+	return results, nil
+}
+
+func (r *itemRepository) CountItems(pctx context.Context, filter primitive.D) (int64, error) {
+	ctx, cancel := context.WithTimeout(pctx, 10*time.Second)
+	defer cancel()
+
+	db := r.itemDbConn(ctx)
+	col := db.Collection("items")
+
+	count, err := col.CountDocuments(ctx, filter)
+	if err != nil {
+		log.Printf("Error: count items %s", err.Error())
+		return -1, err
+	}
+
+	return count, nil
 }
