@@ -43,24 +43,23 @@ func (u *middlewareUsecase) JwtAuthorization(c echo.Context, cfg *config.Config,
 
 func (u *middlewareUsecase) RbacAuthorization(c echo.Context, cfg *config.Config, expected []int) (echo.Context, error) {
 	ctx := c.Request().Context()
+
 	playerRoleCode := c.Get("role_code").(int)
-	fmt.Println("playerRoleCode::: ", playerRoleCode)
-	roleCount, err := u.middlewarerepository.RolesCount(ctx, cfg.Grpc.AuthUrl)
+
+	rolesCount, err := u.middlewarerepository.RolesCount(ctx, cfg.Grpc.AuthUrl)
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("RoleCount:: ", roleCount)
 
-	playerRoleBinary := rbac.IntToBinary(playerRoleCode, int(roleCount))
-	fmt.Println("RoleBinary:: ", playerRoleBinary)
-	fmt.Println("Expected:: ", expected)
-
-	for i := 0; i < int(roleCount); i++ {
+	playerRoleBinary := rbac.IntToBinary(playerRoleCode, int(rolesCount))
+	fmt.Println(playerRoleBinary)
+	for i := 0; i < int(rolesCount); i++ {
 		if playerRoleBinary[i]&expected[i] == 1 {
 			return c, nil
 		}
 	}
-	return nil, errors.New("Error: Permission denind")
+
+	return nil, errors.New("error: permission denied")
 }
 
 func (u *middlewareUsecase) PlayerIdParamValidation(c echo.Context) (echo.Context, error) {

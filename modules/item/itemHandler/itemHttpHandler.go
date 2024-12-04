@@ -1,19 +1,46 @@
 package itemHandler
 
 import (
+	"context"
+	"net/http"
+
+	"github.com/labstack/echo/v4"
 	"github.com/topten1222/hello_sekai/config"
+	"github.com/topten1222/hello_sekai/modules/item"
 	"github.com/topten1222/hello_sekai/modules/item/itemUsecase"
+	"github.com/topten1222/hello_sekai/pkg/request"
+	"github.com/topten1222/hello_sekai/pkg/response"
 )
 
 type (
-	ItemHandlerService interface{}
+	ItemHttpHandlerService interface {
+		CreateItem(echo.Context) error
+	}
 
-	itemHandler struct {
+	itemHttpHandler struct {
 		cfg         *config.Config
 		itemUsecase itemUsecase.ItemUsecaseService
 	}
 )
 
-func NewItemHttpHandler(cfg *config.Config, itemUsecase itemUsecase.ItemUsecaseService) ItemHandlerService {
-	return &itemHandler{cfg: cfg, itemUsecase: itemUsecase}
+func NewItemHttpHandler(cfg *config.Config, itemUsecase itemUsecase.ItemUsecaseService) ItemHttpHandlerService {
+	return &itemHttpHandler{cfg: cfg, itemUsecase: itemUsecase}
+}
+
+func (h *itemHttpHandler) CreateItem(c echo.Context) error {
+	ctx := context.Background()
+	wrapper := request.ContextWrapper(c)
+
+	req := new(item.CreateItemReq)
+	if err := wrapper.Bind(req); err != nil {
+		return response.ErrResponse(c, http.StatusBadRequest, err.Error())
+	}
+
+	res, err := h.itemUsecase.CreateItem(ctx, req)
+	if err != nil {
+		return response.ErrResponse(c, http.StatusBadRequest, err.Error())
+
+	}
+	return response.SuccessResponse(c, http.StatusCreated, res)
+
 }

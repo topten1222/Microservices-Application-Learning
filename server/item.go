@@ -13,7 +13,7 @@ import (
 func (s *server) itemService() {
 	repo := itemRepository.NewItemRepository(s.db)
 	usecase := itemUsecase.NewItemUsecase(repo)
-	itemHandler.NewItemHttpHandler(s.cfg, usecase)
+	httpHandler := itemHandler.NewItemHttpHandler(s.cfg, usecase)
 	itemHandler.NewItemGrpcHandler(usecase)
 
 	go func() {
@@ -25,4 +25,5 @@ func (s *server) itemService() {
 
 	item := s.app.Group("/item_v1")
 	item.GET("/", s.healthCheckService)
+	item.POST("/item", s.middleware.JwtAuthorization(s.middleware.RbacAuthorization(httpHandler.CreateItem, []int{0, 1})))
 }
