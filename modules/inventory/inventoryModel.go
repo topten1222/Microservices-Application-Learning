@@ -13,6 +13,7 @@ type (
 
 	ItemInventory struct {
 		InventoryId string `json:"inventory_id"`
+		PlayerId    string `json:"player_id"`
 		*item.ItemShowCase
 	}
 

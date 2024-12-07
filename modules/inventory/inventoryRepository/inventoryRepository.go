@@ -11,6 +11,7 @@ import (
 	"github.com/topten1222/hello_sekai/pkg/grpccon"
 	"github.com/topten1222/hello_sekai/pkg/jwtauth"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -18,7 +19,7 @@ import (
 type (
 	InventoryRepositoryService interface {
 		FindItemInIds(context.Context, string, itemPb.FindItemsInIdsReq) (*itemPb.FindItemsInIdsRes, error)
-		FindPlayerItems(context.Context, string, []*options.FindOptions) ([]*inventory.Inventory, error)
+		FindPlayerItems(context.Context, primitive.D, []*options.FindOptions) ([]*inventory.Inventory, error)
 		CountPlayerItems(context.Context, string) (int64, error)
 	}
 
@@ -63,13 +64,13 @@ func (r *inventoryRepository) FindItemInIds(pctx context.Context, grpcUrl string
 	return result, nil
 }
 
-func (r *inventoryRepository) FindPlayerItems(pctx context.Context, playerId string, opts []*options.FindOptions) ([]*inventory.Inventory, error) {
+func (r *inventoryRepository) FindPlayerItems(pctx context.Context, filter primitive.D, opts []*options.FindOptions) ([]*inventory.Inventory, error) {
 	ctx, cancel := context.WithTimeout(pctx, 10*time.Second)
 	defer cancel()
 
 	col := r.inventoryDbConn(ctx).Collection("players_inventory")
 
-	cursors, err := col.Find(ctx, bson.M{"player_id": playerId}, opts...)
+	cursors, err := col.Find(ctx, filter, opts...)
 	if err != nil {
 		log.Printf("Error: FindPlayerItems faild %s", err.Error())
 		return nil, errors.New("error: find player items faild")
