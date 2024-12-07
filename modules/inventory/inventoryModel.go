@@ -17,7 +17,12 @@ type (
 	}
 
 	PlayerInventory struct {
-		PlayerId string `json:"player_id"`
+		InventoryId string `json:"inventory_id"`
+		PlayerId    string `json:"player_id"`
 		*models.PaginateRes
+	}
+
+	InventorySearchReq struct {
+		*models.PaginateReq
 	}
 )

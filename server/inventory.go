@@ -13,7 +13,7 @@ import (
 func (s *server) inventoryService() {
 	repo := inventoryRepository.NewInventoryRepository(s.db)
 	usecase := inventoryUsecase.NewInventoryUsecasee(repo)
-	inventoryHandler.NewInventoryHttpHanlder(s.cfg, usecase)
+	httpHandler := inventoryHandler.NewInventoryHttpHanlder(s.cfg, usecase)
 	inventoryHandler.NewInventoryGrpcHandler(usecase)
 	inventoryHandler.NewInventoryQueueHandler(s.cfg, usecase)
 
@@ -26,4 +26,5 @@ func (s *server) inventoryService() {
 
 	inventory := s.app.Group("/inventory_v1")
 	inventory.GET("/", s.healthCheckService)
+	inventory.GET("/inventory:/:player_id", httpHandler.FindPlayerItems)
 }

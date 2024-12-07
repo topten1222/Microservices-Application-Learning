@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/topten1222/hello_sekai/modules/item"
+	itemPb "github.com/topten1222/hello_sekai/modules/item/itemPb"
 	"github.com/topten1222/hello_sekai/modules/item/itemRepository"
 	"github.com/topten1222/hello_sekai/modules/models"
 	"github.com/topten1222/hello_sekai/utils"
@@ -22,6 +23,7 @@ type (
 		FindManyItems(context.Context, string, *item.ItemSearchReq) (*models.PaginateRes, error)
 		EditItem(context.Context, string, *item.ItemUpdateReq) (*item.ItemShowCase, error)
 		EnableOrDisableItem(context.Context, string) (bool, error)
+		FindItemIds(context.Context, *itemPb.FindItemsInIdsReq) (*itemPb.FindItemsInIdsRes, error)
 	}
 
 	itemUsecase struct {
@@ -165,4 +167,33 @@ func (u *itemUsecase) EnableOrDisableItem(pctx context.Context, itemId string) (
 		return false, err
 	}
 	return isActive, nil
+}
+
+func (u *itemUsecase) FindItemIds(pctx context.Context, req *itemPb.FindItemsInIdsReq) (*itemPb.FindItemsInIdsRes, error) {
+	filter := bson.D{}
+	objectIds := make([]primitive.ObjectID, 0)
+	for _, itemId := range req.Ids {
+		objectIds = append(objectIds, utils.ConvertToObjectId(strings.TrimPrefix(itemId, "itemId:")))
+	}
+	filter = append(filter, bson.E{Key: "_id", Value: bson.D{{Key: "$in", Value: objectIds}}})
+	filter = append(filter, bson.E{Key: "usage_status", Value: true})
+
+	results, err := u.itemRepo.FindManyItems(pctx, filter, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resultRes := make([]*itemPb.Item, 0)
+	for _, result := range results {
+		resultRes = append(resultRes, &itemPb.Item{
+			Id:       result.ItemId,
+			Title:    result.Title,
+			ImageUrl: result.ImageUrl,
+			Damage:   int32(result.Damage),
+			Price:    result.Price,
+		})
+	}
+
+	return &itemPb.FindItemsInIdsRes{Items: resultRes}, nil
+
 }

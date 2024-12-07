@@ -3,7 +3,7 @@ syntax = "proto3";
 option go_package = "github.com/topten1222/hello_sekai";
 
 message FindItemsInIdsReq {
-    repeated int32 ids = 1;
+    repeated string ids = 1;
 }
 
 message FindItemsInIdsRes {
@@ -11,7 +11,7 @@ message FindItemsInIdsRes {
 }
 
 message Item {
-    int32 id = 1;
+    string id = 1;
     string title = 2;
     double price = 3;
     string imageUrl = 4;
