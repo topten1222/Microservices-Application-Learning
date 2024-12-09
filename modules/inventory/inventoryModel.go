@@ -24,6 +24,6 @@ type (
 	}
 
 	InventorySearchReq struct {
-		*models.PaginateReq
+		models.PaginateReq
 	}
 )
