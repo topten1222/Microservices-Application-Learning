@@ -18,7 +18,7 @@ import (
 
 type (
 	InventoryRepositoryService interface {
-		FindItemInIds(context.Context, string, itemPb.FindItemsInIdsReq) (*itemPb.FindItemsInIdsRes, error)
+		FindItemInIds(context.Context, string, *itemPb.FindItemsInIdsReq) (*itemPb.FindItemsInIdsRes, error)
 		FindPlayerItems(context.Context, primitive.D, []*options.FindOptions) ([]*inventory.Inventory, error)
 		CountPlayerItems(context.Context, string) (int64, error)
 	}
@@ -36,7 +36,7 @@ func (r *inventoryRepository) inventoryDbConn(pctx context.Context) *mongo.Datab
 	return r.db.Database("inventory_db")
 }
 
-func (r *inventoryRepository) FindItemInIds(pctx context.Context, grpcUrl string, req itemPb.FindItemsInIdsReq) (*itemPb.FindItemsInIdsRes, error) {
+func (r *inventoryRepository) FindItemInIds(pctx context.Context, grpcUrl string, req *itemPb.FindItemsInIdsReq) (*itemPb.FindItemsInIdsRes, error) {
 	ctx, cancel := context.WithTimeout(pctx, 10*time.Second)
 	defer cancel()
 
@@ -47,17 +47,17 @@ func (r *inventoryRepository) FindItemInIds(pctx context.Context, grpcUrl string
 		return nil, errors.New("erorr: grpc connection faild")
 	}
 
-	result, err := conn.Item().FindItemsInIds(ctx, &req)
+	result, err := conn.Item().FindItemsInIds(ctx, req)
 	if err != nil {
 		log.Printf("Error: FindItensInIds Faild %s", err.Error())
 		return nil, errors.New("error: find items in ids faild")
 	}
 	if result == nil {
-		log.Printf("Error: FindItemsInIds faild %s", err.Error())
+		log.Printf("Error: FindItemsInIds faild result")
 		return nil, errors.New("error: items not found")
 	}
 	if len(result.Items) == 0 {
-		log.Printf("Error: FindItemsInIds faild %s", err.Error())
+		log.Printf("Error: FindItemsInIds faild result = 0")
 		return nil, errors.New("error: items not found")
 	}
 

@@ -3,10 +3,13 @@ package inventoryUsecase
 import (
 	"context"
 	"fmt"
+	"log"
 
+	"github.com/topten1222/hello_sekai/config"
 	"github.com/topten1222/hello_sekai/modules/inventory"
 	"github.com/topten1222/hello_sekai/modules/inventory/inventoryRepository"
 	"github.com/topten1222/hello_sekai/modules/item"
+	itemPb "github.com/topten1222/hello_sekai/modules/item/itemPb"
 	"github.com/topten1222/hello_sekai/modules/models"
 	"github.com/topten1222/hello_sekai/utils"
 	"go.mongodb.org/mongo-driver/bson"
@@ -15,7 +18,7 @@ import (
 
 type (
 	InventoryUsecaseService interface {
-		FindPlayerItems(context.Context, string, string, *inventory.InventorySearchReq) (*models.PaginateRes, error)
+		FindPlayerItems(context.Context, *config.Config, string, *inventory.InventorySearchReq) (*models.PaginateRes, error)
 	}
 
 	inventoryUsecase struct {
@@ -27,7 +30,7 @@ func NewInventoryUsecasee(inventoryRepo inventoryRepository.InventoryRepositoryS
 	return &inventoryUsecase{inventoryRepo: inventoryRepo}
 }
 
-func (u *inventoryUsecase) FindPlayerItems(pctx context.Context, basePaginatateUrl, playerId string, req *inventory.InventorySearchReq) (*models.PaginateRes, error) {
+func (u *inventoryUsecase) FindPlayerItems(pctx context.Context, cfg *config.Config, playerId string, req *inventory.InventorySearchReq) (*models.PaginateRes, error) {
 
 	findItemFilter := bson.D{}
 	findItemsOpts := make([]*options.FindOptions, 0)
@@ -43,6 +46,36 @@ func (u *inventoryUsecase) FindPlayerItems(pctx context.Context, basePaginatateU
 	if err != nil {
 		return nil, err
 	}
+	fmt.Println("Befor ItemData: ")
+	fmt.Println("GRPC ITEM")
+
+	itemData, err := u.inventoryRepo.FindItemInIds(pctx, cfg.Grpc.ItemUrl, &itemPb.FindItemsInIdsReq{
+		Ids: func() []string {
+			itemIds := make([]string, 0)
+			for _, v := range inventoryData {
+				itemIds = append(itemIds, v.ItemId)
+			}
+			fmt.Println("ItemIds:: ", itemIds)
+			return itemIds
+		}(),
+	})
+	if err != nil {
+		log.Printf("Error Find Item Ids: %v", err.Error())
+		return nil, err
+	}
+
+	fmt.Println("ItemData: ", itemData)
+
+	itemMaps := make(map[string]*item.ItemShowCase)
+	for _, v := range itemData.Items {
+		itemMaps[v.Id] = &item.ItemShowCase{
+			ItemId:   v.Id,
+			Title:    v.Title,
+			Price:    v.Price,
+			ImageUrl: v.ImageUrl,
+			Damage:   int(v.Damage),
+		}
+	}
 
 	results := make([]*inventory.ItemInventory, 0)
 	for _, v := range inventoryData {
@@ -50,10 +83,15 @@ func (u *inventoryUsecase) FindPlayerItems(pctx context.Context, basePaginatateU
 			InventoryId: v.Id.Hex(),
 			PlayerId:    v.PlayerId,
 			ItemShowCase: &item.ItemShowCase{
-				ItemId: v.ItemId,
+				ItemId:   v.ItemId,
+				Title:    itemMaps[v.ItemId].Title,
+				Price:    itemMaps[v.ItemId].Price,
+				Damage:   itemMaps[v.ItemId].Damage,
+				ImageUrl: itemMaps[v.ItemId].ImageUrl,
 			},
 		})
 	}
+
 	total, err := u.inventoryRepo.CountPlayerItems(pctx, playerId)
 	if err != nil {
 		return nil, err
@@ -78,12 +116,12 @@ func (u *inventoryUsecase) FindPlayerItems(pctx context.Context, basePaginatateU
 		Tolal: total,
 		Limit: req.Limit,
 		First: models.FirstPaginate{
-			Herf: fmt.Sprintf("%s/%s?limit=%d", basePaginatateUrl, playerId, req.Limit),
+			Herf: fmt.Sprintf("%s/%s?limit=%d", cfg.Paginate.InventoryNextPageBaseUrl, playerId, req.Limit),
 		},
 		Next: models.NextPaginate{
 			Start: results[len(results)-1].InventoryId,
 
-			Herf: fmt.Sprintf("%s/%s?limit=%d&start=%s", basePaginatateUrl, playerId, req.Limit, results[len(results)-1].InventoryId),
+			Herf: fmt.Sprintf("%s/%s?limit=%d&start=%s", cfg.Paginate.InventoryNextPageBaseUrl, playerId, req.Limit, results[len(results)-1].InventoryId),
 		},
 	}, nil
 }
