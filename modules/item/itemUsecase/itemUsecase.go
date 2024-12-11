@@ -173,11 +173,11 @@ func (u *itemUsecase) FindItemIds(pctx context.Context, req *itemPb.FindItemsInI
 	filter := bson.D{}
 	objectIds := make([]primitive.ObjectID, 0)
 	for _, itemId := range req.Ids {
-		objectIds = append(objectIds, utils.ConvertToObjectId(strings.TrimPrefix(itemId, "itemId:")))
+		objectIds = append(objectIds, utils.ConvertToObjectId(strings.TrimPrefix(itemId, "item:")))
 	}
 	filter = append(filter, bson.E{Key: "_id", Value: bson.D{{Key: "$in", Value: objectIds}}})
 	filter = append(filter, bson.E{Key: "usage_status", Value: true})
-
+	fmt.Println("Filter:: ", filter)
 	results, err := u.itemRepo.FindManyItems(pctx, filter, nil)
 	if err != nil {
 		return nil, err
@@ -193,6 +193,7 @@ func (u *itemUsecase) FindItemIds(pctx context.Context, req *itemPb.FindItemsInI
 			Price:    result.Price,
 		})
 	}
+	fmt.Println("Results:: ", resultRes)
 
 	return &itemPb.FindItemsInIdsRes{Items: resultRes}, nil
 

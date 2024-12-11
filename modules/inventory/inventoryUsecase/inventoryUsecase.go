@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/topten1222/hello_sekai/config"
 	"github.com/topten1222/hello_sekai/modules/inventory"
@@ -34,13 +35,13 @@ func (u *inventoryUsecase) FindPlayerItems(pctx context.Context, cfg *config.Con
 
 	findItemFilter := bson.D{}
 	findItemsOpts := make([]*options.FindOptions, 0)
-	findItemsOpts = append(findItemsOpts, options.Find().SetSort(bson.D{{"_id", 1}}))
+	findItemsOpts = append(findItemsOpts, options.Find().SetSort(bson.D{{Key: "_id", Value: 1}}))
 	findItemsOpts = append(findItemsOpts, options.Find().SetLimit(int64(req.Limit)))
 
 	if req.Start != "" {
-		findItemFilter = append(findItemFilter, bson.E{"_id", bson.D{{"$gt", utils.ConvertToObjectId(req.Start)}}})
+		findItemFilter = append(findItemFilter, bson.E{Key: "_id", Value: bson.D{{Key: "$gt", Value: utils.ConvertToObjectId(req.Start)}}})
 	}
-	findItemFilter = append(findItemFilter, bson.E{"player_id", playerId})
+	findItemFilter = append(findItemFilter, bson.E{Key: "player_id", Value: playerId})
 
 	inventoryData, err := u.inventoryRepo.FindPlayerItems(pctx, findItemFilter, findItemsOpts)
 	if err != nil {
@@ -76,19 +77,23 @@ func (u *inventoryUsecase) FindPlayerItems(pctx context.Context, cfg *config.Con
 			Damage:   int(v.Damage),
 		}
 	}
-
 	results := make([]*inventory.ItemInventory, 0)
 	for _, v := range inventoryData {
-		results = append(results, &inventory.ItemInventory{
-			InventoryId: v.Id.Hex(),
-			PlayerId:    v.PlayerId,
-			ItemShowCase: &item.ItemShowCase{
+		itemShowCase := &item.ItemShowCase{}
+		itemId := strings.TrimPrefix(v.ItemId, "item:")
+		if itemMaps[itemId] != nil {
+			itemShowCase = &item.ItemShowCase{
 				ItemId:   v.ItemId,
-				Title:    itemMaps[v.ItemId].Title,
-				Price:    itemMaps[v.ItemId].Price,
-				Damage:   itemMaps[v.ItemId].Damage,
-				ImageUrl: itemMaps[v.ItemId].ImageUrl,
-			},
+				Title:    itemMaps[itemId].Title,
+				Price:    itemMaps[itemId].Price,
+				Damage:   itemMaps[itemId].Damage,
+				ImageUrl: itemMaps[itemId].ImageUrl,
+			}
+		}
+		results = append(results, &inventory.ItemInventory{
+			InventoryId:  v.Id.Hex(),
+			PlayerId:     v.PlayerId,
+			ItemShowCase: itemShowCase,
 		})
 	}
 
