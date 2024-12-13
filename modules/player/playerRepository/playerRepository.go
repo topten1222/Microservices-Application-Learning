@@ -7,6 +7,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/topten1222/hello_sekai/modules/models"
 	"github.com/topten1222/hello_sekai/modules/player"
 	"github.com/topten1222/hello_sekai/utils"
 	"go.mongodb.org/mongo-driver/bson"
@@ -24,6 +25,8 @@ type (
 		GetPlayerSavingAccount(context.Context, string) (*player.PlayerSavingAccount, error)
 		FindOnePlayerCredential(context.Context, string) (*player.Player, error)
 		FindOnePlayerProfileToRefresh(context.Context, string) (*player.Player, error)
+		GetOffset(context.Context) (int64, error)
+		UpserOffset(context.Context, int64) error
 	}
 	playerRepository struct {
 		db *mongo.Client
@@ -180,5 +183,38 @@ func (r *playerRepository) FindOnePlayerProfileToRefresh(pctx context.Context, p
 		return nil, errors.New("error: player profile not found")
 	}
 	return result, nil
+
+}
+
+func (r *playerRepository) GetOffset(pctx context.Context) (int64, error) {
+	ctx, cancel := context.WithTimeout(pctx, 10*time.Second)
+	defer cancel()
+
+	db := r.playerDbConn(ctx)
+	col := db.Collection("player_transaction_queue")
+
+	result := new(models.KafkaOffset)
+	if err := col.FindOne(ctx, bson.M{}).Decode(result); err != nil {
+		return -1, errors.New("error: get offset faild")
+	}
+
+	return result.Offset, nil
+}
+
+func (r *playerRepository) UpserOffset(pctx context.Context, offset int64) error {
+	ctx, cancel := context.WithTimeout(pctx, 10*time.Second)
+	defer cancel()
+
+	db := r.playerDbConn(ctx)
+	col := db.Collection("player_transaction_queue")
+
+	result, err := col.UpdateOne(ctx, bson.M{}, bson.M{"$set": bson.M{"offset": offset}}, options.Update().SetUpsert(true))
+
+	if err != nil {
+		return errors.New("error: cannot update upsertoffset")
+	}
+	log.Printf("upsert offset: %v", result)
+
+	return nil
 
 }

@@ -23,6 +23,8 @@ type (
 		GetPlayerSavingAccount(context.Context, string) (*player.PlayerSavingAccount, error)
 		FindOnePlayerCredentail(context.Context, string, string) (*playerPb.PlayerProfile, error)
 		FindOnePlayerToRefresh(context.Context, string) (*playerPb.PlayerProfile, error)
+		GetOffset(context.Context) (int64, error)
+		UpserOffset(context.Context, int64) error
 	}
 
 	playerUsecase struct {
@@ -145,4 +147,12 @@ func (u *playerUsecase) FindOnePlayerToRefresh(pctx context.Context, playerId st
 		CreatedAt: result.CreatedAt.In(loc).String(),
 		UpdatedAt: result.UpdatedAt.In(loc).String(),
 	}, nil
+}
+
+func (u *playerUsecase) GetOffset(pctx context.Context) (int64, error) {
+	return u.playerRepository.GetOffset(pctx)
+}
+
+func (u *playerUsecase) UpserOffset(pctx context.Context, offset int64) error {
+	return u.playerRepository.UpserOffset(pctx, offset)
 }

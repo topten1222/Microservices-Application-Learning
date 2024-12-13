@@ -8,6 +8,7 @@ import (
 
 	"github.com/topten1222/hello_sekai/modules/inventory"
 	itemPb "github.com/topten1222/hello_sekai/modules/item/itemPb"
+	"github.com/topten1222/hello_sekai/modules/models"
 	"github.com/topten1222/hello_sekai/pkg/grpccon"
 	"github.com/topten1222/hello_sekai/pkg/jwtauth"
 	"go.mongodb.org/mongo-driver/bson"
@@ -21,6 +22,8 @@ type (
 		FindItemInIds(context.Context, string, *itemPb.FindItemsInIdsReq) (*itemPb.FindItemsInIdsRes, error)
 		FindPlayerItems(context.Context, primitive.D, []*options.FindOptions) ([]*inventory.Inventory, error)
 		CountPlayerItems(context.Context, string) (int64, error)
+		GetOffset(context.Context) (int64, error)
+		UpserOffset(context.Context, int64) error
 	}
 
 	inventoryRepository struct {
@@ -100,4 +103,37 @@ func (r *inventoryRepository) CountPlayerItems(pctx context.Context, playerId st
 		return -1, errors.New("error: count items faild")
 	}
 	return count, nil
+}
+
+func (r *inventoryRepository) GetOffset(pctx context.Context) (int64, error) {
+	ctx, cancel := context.WithTimeout(pctx, 10*time.Second)
+	defer cancel()
+
+	db := r.inventoryDbConn(ctx)
+	col := db.Collection("players_inventory_queue")
+
+	result := new(models.KafkaOffset)
+	if err := col.FindOne(ctx, bson.M{}).Decode(result); err != nil {
+		return -1, errors.New("error: get offset faild")
+	}
+
+	return result.Offset, nil
+}
+
+func (r *inventoryRepository) UpserOffset(pctx context.Context, offset int64) error {
+	ctx, cancel := context.WithTimeout(pctx, 10*time.Second)
+	defer cancel()
+
+	db := r.inventoryDbConn(ctx)
+	col := db.Collection("players_inventory_queue")
+
+	result, err := col.UpdateOne(ctx, bson.M{}, bson.M{"$set": bson.M{"offset": offset}}, options.Update().SetUpsert(true))
+
+	if err != nil {
+		return errors.New("error: cannot update upsertoffset")
+	}
+	log.Printf("upsert offset: %v", result)
+
+	return nil
+
 }

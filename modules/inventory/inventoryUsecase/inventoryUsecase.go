@@ -20,6 +20,8 @@ import (
 type (
 	InventoryUsecaseService interface {
 		FindPlayerItems(context.Context, *config.Config, string, *inventory.InventorySearchReq) (*models.PaginateRes, error)
+		GetOffset(context.Context) (int64, error)
+		UpserOffset(context.Context, int64) error
 	}
 
 	inventoryUsecase struct {
@@ -129,4 +131,12 @@ func (u *inventoryUsecase) FindPlayerItems(pctx context.Context, cfg *config.Con
 			Herf: fmt.Sprintf("%s/%s?limit=%d&start=%s", cfg.Paginate.InventoryNextPageBaseUrl, playerId, req.Limit, results[len(results)-1].InventoryId),
 		},
 	}, nil
+}
+
+func (u *inventoryUsecase) GetOffset(pctx context.Context) (int64, error) {
+	return u.inventoryRepo.GetOffset(pctx)
+}
+
+func (u *inventoryUsecase) UpserOffset(pctx context.Context, offset int64) error {
+	return u.inventoryRepo.UpserOffset(pctx, offset)
 }
